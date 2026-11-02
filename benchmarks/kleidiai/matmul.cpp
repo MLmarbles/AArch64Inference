@@ -1,6 +1,11 @@
 #include <cstddef>
 #include <iostream>
 #include <vector>
+#include <cstdint>
+#include <limits>
+
+#include "kai/ukernels/matmul/pack/kai_rhs_pack_kxn_x32p16x1b_x32_x32_neon.h"
+#include "kai/ukernels/matmul/matmul_clamp_f32_f32_f32p/kai_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla.h"
 
 constexpr std::size_t M = 6;
 constexpr std::size_t K = 8;
@@ -26,9 +31,31 @@ void matmul(
 
 int main()
 {
+    const float clamp_min =
+        -std::numeric_limits<float>::infinity();
+
+    const float clamp_max =
+        std::numeric_limits<float>::infinity();
+
     std::vector<float> lhs(M * K);
     std::vector<float> rhs(K * N);
+
     std::vector<float> reference(M * N, 0.0f);
+    std::vector<float> kleidiai_output(M * N, 0.0f);
+
+    std::vector<float> bias(N, 0.0f);
+
+    const std::size_t nr = kai_get_n_step_rhs_pack_kxn_x32p16x1b_x32_x32_neon();
+    const std::size_t kr = 1;
+    const std::size_t sr = 1;
+
+    const std::size_t packed_rhs_size = kai_get_rhs_packed_size_rhs_pack_kxn_x32p16x1b_x32_x32_neon(N, K);
+    std::vector<std::uint8_t> packed_rhs(packed_rhs_size);
+
+    const std::size_t rhs_stride = N * sizeof(float);
+    const std::size_t lhs_stride = K * sizeof(float);
+    const std::size_t dst_stride_row = N * sizeof(float);
+    const std::size_t dst_stride_col = sizeof(float);
 
     for (std::size_t i = 0; i < lhs.size(); ++i) {
         lhs[i] = static_cast<float>(static_cast<int>(i % 7) - 3);
@@ -38,9 +65,48 @@ int main()
         rhs[i] = static_cast<float>(static_cast<int>(i % 5) - 2);
     }
 
+
+    kai_run_rhs_pack_kxn_x32p16x1b_x32_x32_neon(
+        1,
+        N,
+        K,
+        nr,
+        kr,
+        sr,
+        rhs_stride,
+        rhs.data(),
+        bias.data(),
+        nullptr,
+        packed_rhs.data(),
+        0,
+        nullptr
+    );
+
+    std::cout << "RHS size: " << rhs.size() * sizeof(float) << " bytes\n";
+
+    std::cout << "Packed RHS size: " << packed_rhs_size << " bytes\n";
+
+    kai_run_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla(
+        M,
+        N,
+        K,
+        lhs.data(),
+        lhs_stride,
+        packed_rhs.data(),
+        kleidiai_output.data(),
+        dst_stride_row,
+        dst_stride_col,
+        clamp_min,
+        clamp_max
+    );
+
     matmul(lhs, rhs, reference);
 
-    std::cout << "Reference C[0][0] = " << reference[0] << '\n';
+    for (std::size_t i = 0; i < reference.size(); ++i) {
+        if (kleidiai_output[i] != reference[i]) {
+            std::cout << "nope" << '\n';
+        }
+    }
 
     return 0;
 }
