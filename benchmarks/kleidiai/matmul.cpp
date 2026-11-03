@@ -8,9 +8,9 @@
 #include "kai/ukernels/matmul/pack/kai_rhs_pack_kxn_x32p16x1b_x32_x32_neon.h"
 #include "kai/ukernels/matmul/matmul_clamp_f32_f32_f32p/kai_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla.h"
 
-constexpr std::size_t M = 64;
-constexpr std::size_t K = 64;
-constexpr std::size_t N = 64;
+constexpr std::size_t M = 12;
+constexpr std::size_t K = 32;
+constexpr std::size_t N = 128;
 
 void matmul(
     const std::vector<float>& lhs,

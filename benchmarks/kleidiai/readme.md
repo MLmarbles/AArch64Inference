@@ -48,3 +48,35 @@ Naive Performance: 2.92806 GFLOPS
 comment: it seems like when the matrices get larger, the kernel gets enough work
 to make good use of NEON and its 6x16 blocking technique.
 
+### boundary cases
+6x16x128
+FLOPs per matmul: 24576
+KleidiAI Time: 705 average 
+KleidiAI Performance: 34.8258 GFLOPS
+
+7x16x128
+FLOPs per matmul: 28672
+KleidiAI Time: 813 average 
+KleidiAI Performance: 35.2528 GFLOPS
+
+6x17x128
+FLOPs per matmul: 26112
+KleidiAI Time: 752 average 
+KleidiAI Performance: 34.6955 GFLOPS
+
+7x17x128
+FLOPs per matmul: 30464
+KleidiAI Time: 874 average 
+KleidiAI Performance: 34.8349 GFLOPS
+
+12x32x128
+FLOPs per matmul: 98304
+KleidiAI Time: 2414 average 
+KleidiAI Performance: 40.7141 GFLOPS
+
+comment: it seems that crossing into edges where 6x16 tiling doesnt perfectly fit
+didnt actually tank performance that much
+after observing the assembly files it seems that there are special cases for 
+rows sizes less than 6
+and for columns it seems that it still computes uses a 16 sized vector with padded values
+but only writes to the last existing few values
