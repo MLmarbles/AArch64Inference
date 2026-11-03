@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <limits>
+#include <chrono>
 
 #include "kai/ukernels/matmul/pack/kai_rhs_pack_kxn_x32p16x1b_x32_x32_neon.h"
 #include "kai/ukernels/matmul/matmul_clamp_f32_f32_f32p/kai_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla.h"
@@ -86,21 +87,43 @@ int main()
 
     std::cout << "Packed RHS size: " << packed_rhs_size << " bytes\n";
 
-    kai_run_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla(
-        M,
-        N,
-        K,
-        lhs.data(),
-        lhs_stride,
-        packed_rhs.data(),
-        kleidiai_output.data(),
-        dst_stride_row,
-        dst_stride_col,
-        clamp_min,
-        clamp_max
-    );
 
-    matmul(lhs, rhs, reference);
+    int runs = 1000;
+
+    long long total = 0;
+    auto start = std::chrono::steady_clock::now();
+    for(std::size_t i = 0; i < runs; ++i) {
+
+        kai_run_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla(
+            M,
+            N,
+            K,
+            lhs.data(),
+            lhs_stride,
+            packed_rhs.data(),
+            kleidiai_output.data(),
+            dst_stride_row,
+            dst_stride_col,
+            clamp_min,
+            clamp_max
+        );
+
+    }
+
+    auto end = std::chrono::steady_clock::now();
+    total += std::chrono::duration_cast<std::chrono::nanoseconds>((end - start)).count();
+    std::cout << "KleidiAI Time: " << total/runs << " average \n";
+
+    total = 0;
+    start = std::chrono::steady_clock::now();
+    for(std::size_t i = 0; i < runs; ++i) {
+
+        matmul(lhs, rhs, reference);
+
+    }
+    end = std::chrono::steady_clock::now();
+    total += std::chrono::duration_cast<std::chrono::nanoseconds>((end - start)).count();
+    std::cout << "Naive Time: " << total/runs << " average \n";
 
     for (std::size_t i = 0; i < reference.size(); ++i) {
         if (kleidiai_output[i] != reference[i]) {
