@@ -87,6 +87,8 @@ int main()
 
     std::cout << "Packed RHS size: " << packed_rhs_size << " bytes\n";
 
+    long long flops = 2 * M * N * K;
+    std::cout << "FLOPs per matmul: " << flops << '\n';
 
     int runs = 1000;
 
@@ -113,6 +115,9 @@ int main()
     auto end = std::chrono::steady_clock::now();
     total += std::chrono::duration_cast<std::chrono::nanoseconds>((end - start)).count();
     std::cout << "KleidiAI Time: " << total/runs << " average \n";
+    double nanoseconds = static_cast<double>(total) / runs;
+    double gflops = static_cast<double>(flops) / nanoseconds;
+    std::cout << "KleidiAI Performance: " << gflops << " GFLOPS\n";
 
     total = 0;
     start = std::chrono::steady_clock::now();
@@ -124,6 +129,9 @@ int main()
     end = std::chrono::steady_clock::now();
     total += std::chrono::duration_cast<std::chrono::nanoseconds>((end - start)).count();
     std::cout << "Naive Time: " << total/runs << " average \n";
+    nanoseconds = static_cast<double>(total) / runs;
+    gflops = static_cast<double>(flops) / nanoseconds;
+    std::cout << "Naive Performance: " << gflops << " GFLOPS\n";
 
     for (std::size_t i = 0; i < reference.size(); ++i) {
         if (kleidiai_output[i] != reference[i]) {
