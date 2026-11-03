@@ -8,9 +8,9 @@
 #include "kai/ukernels/matmul/pack/kai_rhs_pack_kxn_x32p16x1b_x32_x32_neon.h"
 #include "kai/ukernels/matmul/matmul_clamp_f32_f32_f32p/kai_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla.h"
 
-constexpr std::size_t M = 6;
-constexpr std::size_t K = 8;
-constexpr std::size_t N = 16;
+constexpr std::size_t M = 128;
+constexpr std::size_t K = 128;
+constexpr std::size_t N = 128;
 
 void matmul(
     const std::vector<float>& lhs,
@@ -90,7 +90,7 @@ int main()
     long long flops = 2 * M * N * K;
     std::cout << "FLOPs per matmul: " << flops << '\n';
 
-    int runs = 1000;
+    int runs = 100000;
 
     long long total = 0;
     auto start = std::chrono::steady_clock::now();
