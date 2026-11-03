@@ -8,9 +8,9 @@
 #include "kai/ukernels/matmul/pack/kai_rhs_pack_kxn_x32p16x1b_x32_x32_neon.h"
 #include "kai/ukernels/matmul/matmul_clamp_f32_f32_f32p/kai_matmul_clamp_f32_f32_f32p16x1b_6x16_neon_mla.h"
 
-constexpr std::size_t M = 128;
-constexpr std::size_t K = 128;
-constexpr std::size_t N = 128;
+constexpr std::size_t M = 64;
+constexpr std::size_t K = 64;
+constexpr std::size_t N = 64;
 
 void matmul(
     const std::vector<float>& lhs,
@@ -67,21 +67,29 @@ int main()
     }
 
 
-    kai_run_rhs_pack_kxn_x32p16x1b_x32_x32_neon(
-        1,
-        N,
-        K,
-        nr,
-        kr,
-        sr,
-        rhs_stride,
-        rhs.data(),
-        bias.data(),
-        nullptr,
-        packed_rhs.data(),
-        0,
-        nullptr
-    );
+    int pack_runs = 1000;
+    long long pack_total = 0;
+    auto pack_start = std::chrono::steady_clock::now();
+    for (std::size_t i = 0; i < pack_runs; ++i) {
+        kai_run_rhs_pack_kxn_x32p16x1b_x32_x32_neon(
+            1,
+            N,
+            K,
+            nr,
+            kr,
+            sr,
+            rhs_stride,
+            rhs.data(),
+            bias.data(),
+            nullptr,
+            packed_rhs.data(),
+            0,
+            nullptr
+        );
+    }
+    auto pack_end = std::chrono::steady_clock::now();
+    pack_total += std::chrono::duration_cast<std::chrono::nanoseconds>((pack_end - pack_start)).count();
+    std::cout << "KleidiAI Packing Time: " << pack_total/pack_runs << " average \n";
 
     std::cout << "RHS size: " << rhs.size() * sizeof(float) << " bytes\n";
 
@@ -90,7 +98,7 @@ int main()
     long long flops = 2 * M * N * K;
     std::cout << "FLOPs per matmul: " << flops << '\n';
 
-    int runs = 100000;
+    int runs = 1000;
 
     long long total = 0;
     auto start = std::chrono::steady_clock::now();
